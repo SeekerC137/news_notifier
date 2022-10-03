@@ -1,9 +1,6 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import BotCommand
+from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters import IDFilter
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from db import get_user
 from db import create_new_user

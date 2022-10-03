@@ -4,7 +4,7 @@ from aiogram import types
 def get_start_menu_keyboard() -> types.InlineKeyboardMarkup:
     keyboard = types.InlineKeyboardMarkup(row_width=2)
     buttons = [
-        types.InlineKeyboardButton(text="Ключевые слова", callback_data="keywords"),
+        types.InlineKeyboardButton(text="📝 Ключевые слова", callback_data="keywords"),
     ]
     keyboard.add(*buttons)
     return keyboard
@@ -13,8 +13,8 @@ def get_start_menu_keyboard() -> types.InlineKeyboardMarkup:
 def get_start_keywords_editing_menu_keyboard() -> types.InlineKeyboardMarkup:
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     buttons = [
-        types.InlineKeyboardButton(text="Добавить ключевые слова", callback_data="add_keywords"),
-        types.InlineKeyboardButton(text="Удалить ключевые слова", callback_data="delete_keywords"),
+        types.InlineKeyboardButton(text="➕ Добавить ключевые слова", callback_data="add_keywords"),
+        types.InlineKeyboardButton(text="➖ Удалить ключевые слова", callback_data="delete_keywords"),
     ]
     keyboard.add(*buttons)
     return keyboard

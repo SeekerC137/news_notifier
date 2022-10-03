@@ -4,6 +4,33 @@ from aiogram.dispatcher import FSMContext
 from db import get_user
 
 
+async def return_inline_answer_to_user(
+    message_str: str,
+    keyboard: types.InlineKeyboardMarkup,
+    call: types.CallbackQuery,
+) -> None:
+
+    await call.message.answer(
+        message_str,
+        reply_markup=keyboard,
+        disable_web_page_preview=True
+    )
+    await call.answer()
+
+
+async def return_cmd_answer_to_user(
+    message_str: str,
+    keyboard: types.InlineKeyboardMarkup,
+    message: types.Message
+) -> None:
+
+    await message.answer(
+        message_str,
+        reply_markup=keyboard,
+        disable_web_page_preview=True,
+    )
+
+
 async def get_user_data_from_state_storage(state: FSMContext) -> dict:
 
     data_storage = await state.get_data()
