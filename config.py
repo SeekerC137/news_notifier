@@ -8,4 +8,5 @@ DB_URI = os.environ.get('DATABASE_URL')
 RSS_LIST = [
     "https://news.google.com/rss?hl=ru&gl=RU&ceid=RU:ru",
     "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    "https://www.interfax.ru/rss.asp",
 ]
