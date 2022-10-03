@@ -15,6 +15,7 @@ def get_start_keywords_editing_menu_keyboard() -> types.InlineKeyboardMarkup:
     buttons = [
         types.InlineKeyboardButton(text="➕ Добавить ключевые слова", callback_data="add_keywords"),
         types.InlineKeyboardButton(text="➖ Удалить ключевые слова", callback_data="delete_keywords"),
+        types.InlineKeyboardButton(text="↩️ Вернуться в начало", callback_data="cancel")
     ]
     keyboard.add(*buttons)
     return keyboard
