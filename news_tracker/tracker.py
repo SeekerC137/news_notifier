@@ -1,11 +1,102 @@
-import traceback
 import re
 import asyncio
-import feedparser
+import traceback
 from time import mktime
-from datetime import datetime, timedelta
+from datetime import datetime
+
+import feedparser
 
 from telegram_bot.bot import bot
+
+from db import get_all_users_id
+from db import get_user_data
+
+from config import RSS_LIST
+
+
+class TrackerLoop:
+
+    def __init__(self) -> None:
+        self.users_id_list = None
+        self.rss_feeds_last_update_times = None
+        self.users_id_to_keywords = None
+        self.rss_list = RSS_LIST
+
+    async def run(self) -> None:
+        self.update_feeds_last_update_times()
+        while True:
+            self.users_id_list = await get_all_users_id()
+            await self.update_users_id_to_keywords_dict()
+            for rss_link in self.rss_list:
+                try:
+                    feed = feedparser.parse(rss_link)
+                    if len(feed['entries']) == 0:
+                        print(f"Пустой ответ для {rss_link}")
+                        continue
+
+                    old_feed_update_time = self.rss_feeds_last_update_times[rss_link]
+                    new_feed_update_time = get_entry_publishing_time(feed['entries'][0])
+
+                    try:
+                        if new_feed_update_time > old_feed_update_time:
+                            self.rss_feeds_last_update_times[rss_link] = new_feed_update_time
+                            for entry in feed['entries']:
+                                entry_publishing_time = get_entry_publishing_time(entry)
+                                if entry_publishing_time > old_feed_update_time:
+                                    link = entry['link']
+                                    title = clean_str_from_html_tags(entry['title'])
+                                    try:
+                                        summary = clean_str_from_html_tags(entry['summary'])
+                                    except KeyError:
+                                        summary = ''
+                                    for user_id in self.users_id_list:
+                                        for keyword in self.users_id_to_keywords[user_id]:
+                                            keyword = keyword.lower()
+                                            if keyword in title.lower():
+                                                await send_notice_to_user(user_id, title, keyword, summary, link)
+                                            elif keyword in summary.lower():
+                                                await send_notice_to_user(user_id, title, keyword, summary, link)
+                                            await asyncio.sleep(0)
+                                        await asyncio.sleep(0)
+                                else:
+                                    break
+                                await asyncio.sleep(0)
+
+                    except Exception:
+                        print(f"Ошибка доступа к 'entry' в {rss_link}.")
+                        print(traceback.format_exc())
+
+                except Exception:
+                    print(f"Ошибка feedparser при обработке {rss_link}.")
+                    print(traceback.format_exc())
+
+                finally:
+                    await asyncio.sleep(0)
+                    continue
+            await asyncio.sleep(30)
+
+    def update_feeds_last_update_times(self) -> None:
+        self.rss_feeds_last_update_times = {}
+        now = datetime.utcnow()
+        for rrs_link in self.rss_list:
+            self.rss_feeds_last_update_times[rrs_link] = now
+
+    async def update_users_id_to_keywords_dict(self) -> None:
+        for user_id in self.users_id_list:
+            self.users_id_to_keywords = await get_user_data(user_id)["keywords"]
+
+
+def get_entry_publishing_time(entry: dict) -> datetime:
+
+    entry_update_time = entry['published_parsed']
+
+    # Исправление даты новостей которые не парсятся автоматически
+    if not entry_update_time:
+        entry_update_time = datetime.strptime(entry['published'], "%b %d, %Y %H:%M GMT")
+    else:
+        entry_update_time = datetime.fromtimestamp(mktime(entry_update_time))
+
+    return entry_update_time
 
 
 def clean_str_from_html_tags(raw_html: str) -> str:
@@ -13,124 +104,35 @@ def clean_str_from_html_tags(raw_html: str) -> str:
     return re.sub("<.*?>", "", raw_html)
 
 
-class TrackerLoop:
-    """
-    Отслеживает новости по RSS ссылкам, ищет в них упоминания компаний и найденные отправляет пользователю
-    для редактирования и отправки в Пульс.
-    """
+async def send_notice_to_user(user_id: int, title: str, keyword: str, summary: str, link: str) -> None:
 
-    def __init__(self):
-        self.redactor_id = redactor_id
-        self.rss_list = rss_list
-        self.ticker_list = ticker_list
-        self.ticker_to_company_name = ticker_to_company_name
-        self.rss_feeds_last_entry_time = {}
-        server_time_delta = int(datetime.strftime(datetime.now().astimezone(), '%z')[:3])
-        for rrs_link in self.rss_list:
-            self.rss_feeds_last_entry_time[rrs_link] = datetime.now() - timedelta(hours=server_time_delta)
+    max_summary_length = 3000
+    summary_list = [summary[i:(i + max_summary_length)] for i in range(0, len(summary), max_summary_length)]
 
-    async def run(self):
-        while True:
-            for rrs_link in self.rss_list:
-                await asyncio.sleep(1)
-                while True:
-                    await asyncio.sleep(1)
-                    try:
-                        feed = feedparser.parse(rrs_link)
-                        if len(feed['entries']) == 0:
-                            print(f"Пустой ответ для {rrs_link}")
-                            await asyncio.sleep(5)
-                            continue
-                        new_feed_last_entry_time = feed['entries'][0]['published_parsed']
-                        # Исправление даты новостей которые не парсятся автоматически
-                        if not new_feed_last_entry_time:
-                            new_feed_last_entry_time = datetime.strptime(feed['entries'][0]['published'], "%b %d, %Y %H:%M GMT")
-                        else:
-                            new_feed_last_entry_time = datetime.fromtimestamp(mktime(new_feed_last_entry_time))
-                        old_feed_last_entry_time = self.rss_feeds_last_entry_time[rrs_link]
-                        try:
-                            if new_feed_last_entry_time > old_feed_last_entry_time:
-                                for entry in feed['entries']:
-                                    await asyncio.sleep(1)
-                                    # Исправление даты новостей которые не парсятся автоматически
-                                    if not entry['published_parsed']:
-                                        entry_time = datetime.strptime(entry['published'], "%b %d, %Y %H:%M GMT")
-                                    else:
-                                        entry_time = datetime.fromtimestamp(mktime(entry['published_parsed']))
-                                    if entry_time > self.rss_feeds_last_entry_time[rrs_link]:
-                                        link = entry['link']
-                                        title = clean_str_from_html_tags(entry['title'])
-                                        try:
-                                            summary = clean_str_from_html_tags(entry['summary'])
-                                        except:
-                                            summary = ''
-                                        for ticker in self.ticker_list:
-                                            if self.ticker_to_company_name[ticker] in title:
-                                                await send_notice_to_user(self.redactor_id, ticker, title, summary, link)
-                                            elif ticker in title:
-                                                if len(ticker) > 1:
-                                                    await send_notice_to_user(self.redactor_id, ticker, title, summary, link)
-                                    else:
-                                        break
-                                self.rss_feeds_last_entry_time[rrs_link] = new_feed_last_entry_time
-                            else:
-                                break
-                        except Exception as e:
-                            print(f"Ошибка доступа к 'entry' в {rrs_link}.")
-                            print(traceback.format_exc())
-                            await asyncio.sleep(5)
-                            continue
-                        else:
-                            break
-                    except Exception as e:
-                        print(f"Ошибка feedparser при обработке {rrs_link}.")
-                        print(traceback.format_exc())
-                        await asyncio.sleep(5)
-                        continue
-                    else:
-                        break
-            await asyncio.sleep(5)
-
-
-async def send_notice_to_user(redactor_id_one, ticker, title, summary, link):
-    if len(summary) > 7600:
-        print(f"Сообщение слишком длинное - {link}")
-        return
-    if len(summary) > 3600:
-        msg = summary.split(' ')
-        summary1 = msg[:len(msg)//2]
-        summary2 = msg[len(msg)//2:]
-        summary1 = ' '.join(summary1)
-        summary2 = ' '.join(summary2)
-        msg1 = (
-            f"{{${ticker}}}\n"
-            f"{title}\n\n"
-            f"{summary1}\n"
-            '\nпродолжение 👇'
-        )
-        msg2 = (
-            f"{summary2}\n"
-            "#новости\n\n"
-            f"{link}"
-        )
-        await bot.send_message(redactor_id_one, msg1, disable_web_page_preview=True)
-        await bot.send_message(redactor_id_one, msg2, disable_web_page_preview=True)
-    else:
-        msg = (
-            f"{{${ticker}}}\n"
-            f"{title}\n\n"
-            f"{summary}\n"
-            "#новости\n\n"
-            f"{link}"
-        )
-        await bot.send_message(redactor_id_one, msg, disable_web_page_preview=True)
-    if len(summary) > 1000:
-        try:
-            ai_summary = summarize(summary)
-            msg = (
-                "Краткий пересказ новости👆 от Искусственного Интеллекта🤖:\n\n"
-                f"{ai_summary}"
+    for i, _summary in enumerate(summary_list):
+        if i == len(summary_list):
+            message = (
+                f"Ключевое слово: #{keyword}\n\n"
+                f"{title}\n\n"
+                f"<a href='{link}'>Ссылка на новость</a>\n\n"
+                f"{_summary}"
             )
-            await bot.send_message(redactor_id_one, msg, disable_web_page_preview=True)
-        except SberCloudSummarizeError:
-            print(f"Ошибка Суммаризатора от SberCloud для новости {link}.")
+        else:
+            if i == 0:
+                message = (
+                    f"Ключевое слово: #{keyword}\n\n"
+                    f"{title}\n\n"
+                    f"<a href='{link}'>Ссылка на новость</a>\n\n"
+                    f"{_summary}\n\n"
+                    "продолжение 👇"
+                )
+            elif i == len(summary_list):
+                message = (
+                    f"{_summary}"
+                )
+            else:
+                message = (
+                    f"{_summary}\n\n"
+                    "продолжение 👇"
+                )
+        await bot.send_message(user_id, message, disable_web_page_preview=True)

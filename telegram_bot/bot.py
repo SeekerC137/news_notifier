@@ -23,13 +23,10 @@ async def run_bot() -> None:
     )
     logger.error("Starting bot")
 
-    # Регистрация хэндлеров
     register_handlers(dp)
 
-    # Установка команд бота
     await set_commands(bot)
 
-    # Запуск поллинга
     await dp.start_polling()
 
 
