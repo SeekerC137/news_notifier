@@ -8,8 +8,8 @@ import feedparser
 
 from telegram_bot.bot import bot
 
-from db import get_all_users_id
-from db import get_user_data
+from db import get_all_users
+from db import get_user
 
 from config import RSS_LIST
 
@@ -25,7 +25,7 @@ class TrackerLoop:
     async def run(self) -> None:
         self.update_feeds_last_update_times()
         while True:
-            self.users_id_list = await get_all_users_id()
+            await self.update_user_id_list()
             await self.update_users_id_to_keywords_dict()
             for rss_link in self.rss_list:
                 try:
@@ -75,6 +75,13 @@ class TrackerLoop:
                     continue
             await asyncio.sleep(30)
 
+    async def update_user_id_list(self) -> None:
+        users = await get_all_users()
+        self.users_id_list = []
+        for user in users:
+            self.users_id_list.append(user.user_id)
+            await asyncio.sleep(0)
+
     def update_feeds_last_update_times(self) -> None:
         self.rss_feeds_last_update_times = {}
         now = datetime.utcnow()
@@ -83,7 +90,8 @@ class TrackerLoop:
 
     async def update_users_id_to_keywords_dict(self) -> None:
         for user_id in self.users_id_list:
-            self.users_id_to_keywords = await get_user_data(user_id)["keywords"]
+            user = await get_user(user_id)
+            self.users_id_to_keywords[user_id] = user.user_data["keywords"]
 
 
 def get_entry_publishing_time(entry: dict) -> datetime:
