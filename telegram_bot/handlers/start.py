@@ -135,7 +135,7 @@ async def get_keyword_from_user(message: types.Message, state: FSMContext) -> No
     user_data = await get_user_data_from_state_storage(state)
     user_data["keywords"].append(keyword)
     await update_user_data(message.from_user['id'], user_data)
-    await state.set_data(user_data)
+    await state.update_data(user_data=user_data)
 
     message_str = (
         f"Ключевое слово '{keyword}' было добавлено.\n\n"
@@ -164,7 +164,7 @@ async def get_keyword_number_from_user(message: types.Message, state: FSMContext
         )
     else:
         await update_user_data(message.from_user['id'], user_data)
-        await state.set_data(user_data)
+        await state.update_data(user_data=user_data)
         message_str = (
             f"Ключевое слово '{deleted_keyword}' было удалено.\n\n"
             "Ваш текущий список ключевых слов:\n\n"
