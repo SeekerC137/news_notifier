@@ -35,32 +35,31 @@ class TrackerLoop:
                         continue
 
                     old_feed_update_time = self.rss_feeds_last_update_times[rss_link]
-                    new_feed_update_time = get_entry_publishing_time(feed['entries'][0])
 
                     try:
-                        if new_feed_update_time > old_feed_update_time:
-                            self.rss_feeds_last_update_times[rss_link] = new_feed_update_time
-                            for entry in feed['entries']:
-                                entry_publishing_time = get_entry_publishing_time(entry)
-                                if entry_publishing_time > old_feed_update_time:
-                                    link = entry['link']
-                                    title = clean_str_from_html_tags(entry['title'])
-                                    try:
-                                        summary = clean_str_from_html_tags(entry['summary'])
-                                    except KeyError:
-                                        summary = ''
-                                    for user_id in self.users_id_list:
-                                        for keyword in self.users_id_to_keywords[user_id]:
-                                            keyword = keyword.lower()
-                                            if keyword in title.lower():
-                                                await send_notice_to_user(user_id, title, keyword, summary, link)
-                                            elif keyword in summary.lower():
-                                                await send_notice_to_user(user_id, title, keyword, summary, link)
-                                            await asyncio.sleep(0)
+                        for entry in feed['entries']:
+                            entry_publishing_time = get_entry_publishing_time(entry)
+                            if entry_publishing_time > old_feed_update_time:
+                                if entry_publishing_time > self.rss_feeds_last_update_times[rss_link]:
+                                    self.rss_feeds_last_update_times[rss_link] = entry_publishing_time
+                                link = entry['link']
+                                title = clean_str_from_html_tags(entry['title'])
+                                try:
+                                    summary = clean_str_from_html_tags(entry['summary'])
+                                except KeyError:
+                                    summary = ''
+                                for user_id in self.users_id_list:
+                                    for keyword in self.users_id_to_keywords[user_id]:
+                                        keyword = keyword.lower()
+                                        if keyword in title.lower():
+                                            await send_notice_to_user(user_id, title, keyword, summary, link)
+                                        elif keyword in summary.lower():
+                                            await send_notice_to_user(user_id, title, keyword, summary, link)
                                         await asyncio.sleep(0)
-                                else:
-                                    break
-                                await asyncio.sleep(0)
+                                    await asyncio.sleep(0)
+                            else:
+                                continue
+                            await asyncio.sleep(0)
 
                     except Exception:
                         print(f"Ошибка доступа к 'entry' в {rss_link}.")
