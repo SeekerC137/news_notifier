@@ -89,6 +89,7 @@ class TrackerLoop:
             self.rss_feeds_last_update_times[rrs_link] = now
 
     async def update_users_id_to_keywords_dict(self) -> None:
+        self.users_id_to_keywords = {}
         for user_id in self.users_id_list:
             user = await get_user(user_id)
             self.users_id_to_keywords[user_id] = user.user_data["keywords"]
