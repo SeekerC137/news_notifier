@@ -72,7 +72,7 @@ class TrackerLoop:
                 finally:
                     await asyncio.sleep(0)
                     continue
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
     async def update_user_id_list(self) -> None:
         users = await get_all_users()

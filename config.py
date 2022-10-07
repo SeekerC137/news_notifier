@@ -1,7 +1,7 @@
 import os
 
 
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
+BOT_TOKEN = "5791758612:AAFxX82gI4jZoHx52ZftAXRga-4ZKNZiH1c"#os.environ.get('BOT_TOKEN')
 
 DB_URI = os.environ.get('DATABASE_URL')
 
