@@ -1,12 +1,14 @@
-# fly.toml file generated for news-notifier on 2022-10-05T16:39:04+05:00
+# fly.toml file generated for news-notifier on 2022-10-03T23:35:14+05:00
 
 app = "news-notifier"
-kill_signal = "SIGINT"
-kill_timeout = 60
-processes = []
+kill_signal = "SIGTERM"
+kill_timeout = 10
 
 [build]
-  builder = "paketobuildpacks/builder:base"
+  builder = "heroku/buildpacks:latest"
 
-#deploy]
-#  release_command = "python3 db.py"
+[deploy]
+  release_command = "python3 db.py"
+
+[env]
+  PORT = "8080"

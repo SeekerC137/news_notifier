@@ -1,2 +1,1 @@
-# Modify this Procfile to fit your needs
-web: python main.py
+clock: python main.py
