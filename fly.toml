@@ -9,6 +9,3 @@ kill_timeout = 10
 
 [deploy]
   release_command = "python3 db.py"
-
-[env]
-  PORT = "8080"

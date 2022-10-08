@@ -18,8 +18,8 @@ class TrackerLoop:
 
     def __init__(self) -> None:
         self.users_id_list = None
-        self.rss_feeds_last_update_times = None
-        self.users_id_to_keywords = None
+        self.rss_feeds_last_update_times = {}
+        self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
 
     async def run(self) -> None:
@@ -74,6 +74,11 @@ class TrackerLoop:
                     continue
             await asyncio.sleep(30)
 
+    def update_feeds_last_update_times(self) -> None:
+        now = datetime.utcnow()
+        for rrs_link in self.rss_list:
+            self.rss_feeds_last_update_times[rrs_link] = now
+
     async def update_user_id_list(self) -> None:
         users = await get_all_users()
         self.users_id_list = []
@@ -81,14 +86,7 @@ class TrackerLoop:
             self.users_id_list.append(user.user_id)
             await asyncio.sleep(0)
 
-    def update_feeds_last_update_times(self) -> None:
-        self.rss_feeds_last_update_times = {}
-        now = datetime.utcnow()
-        for rrs_link in self.rss_list:
-            self.rss_feeds_last_update_times[rrs_link] = now
-
     async def update_users_id_to_keywords_dict(self) -> None:
-        self.users_id_to_keywords = {}
         for user_id in self.users_id_list:
             user = await get_user(user_id)
             self.users_id_to_keywords[user_id] = user.user_data["keywords"]
