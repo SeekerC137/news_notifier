@@ -33,9 +33,7 @@ class TrackerLoop:
                     if len(feed['entries']) == 0:
                         print(f"Пустой ответ для {rss_link}")
                         continue
-
                     old_feed_update_time = self.rss_feeds_last_update_times[rss_link]
-
                     try:
                         for entry in feed['entries']:
                             entry_publishing_time = get_entry_publishing_time(entry)
@@ -57,21 +55,14 @@ class TrackerLoop:
                                             await send_notice_to_user(user_id, title, keyword, summary, link)
                                         await asyncio.sleep(0)
                                     await asyncio.sleep(0)
-                            else:
-                                continue
                             await asyncio.sleep(0)
-
                     except Exception:
                         print(f"Ошибка доступа к 'entry' в {rss_link}.")
                         print(traceback.format_exc())
-
                 except Exception:
                     print(f"Ошибка feedparser при обработке {rss_link}.")
                     print(traceback.format_exc())
-
-                finally:
-                    await asyncio.sleep(0)
-                    continue
+                await asyncio.sleep(0)
             await asyncio.sleep(30)
 
     def update_feeds_last_update_times(self) -> None:
