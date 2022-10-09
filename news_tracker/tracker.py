@@ -106,33 +106,29 @@ def clean_str_from_html_tags(raw_html: str) -> str:
 
 async def send_notice_to_user(user_id: int, title: str, keyword: str, summary: str, link: str) -> None:
 
-    max_summary_length = 3000
-    summary_list = [summary[i:(i + max_summary_length)] for i in range(0, len(summary), max_summary_length)]
+    if summary:
+        summary = crop_summary(summary)
+        message = (
+            f"<a href='{link}'>{title}</a>\n\n"
+            f"{summary}\n\n"
+            f"Ключевое слово: #{keyword}"
+        )
+    else:
+        message = (
+            f"<a href='{link}'>{title}</a>\n\n"
+            f"Ключевое слово: #{keyword}"
+        )
 
-    for i, _summary in enumerate(summary_list):
-        if (i + 1) == len(summary_list):
-            message = (
-                f"Ключевое слово: #{keyword}\n\n"
-                f"{title}\n\n"
-                f"<a href='{link}'>Ссылка на новость</a>\n\n"
-                f"{_summary}"
-            )
-        else:
-            if i == 0:
-                message = (
-                    f"Ключевое слово: #{keyword}\n\n"
-                    f"{title}\n\n"
-                    f"<a href='{link}'>Ссылка на новость</a>\n\n"
-                    f"{_summary}\n\n"
-                    "продолжение 👇"
-                )
-            elif i == len(summary_list):
-                message = (
-                    f"{_summary}"
-                )
-            else:
-                message = (
-                    f"{_summary}\n\n"
-                    "продолжение 👇"
-                )
-        await bot.send_message(user_id, message, disable_web_page_preview=True)
+    await bot.send_message(user_id, message, disable_web_page_preview=True)
+
+
+def crop_summary(summary: str) -> str:
+    summary_length_limit = 3000
+    word_list = summary.split(" ")
+    new_summary = ""
+    for word in word_list:
+        new_summary += f"{word} "
+        if len(new_summary) >= summary_length_limit:
+            new_summary += "..."
+            break
+    return new_summary
