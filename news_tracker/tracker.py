@@ -23,6 +23,7 @@ class TrackerLoop:
         self.rss_list = RSS_LIST
 
     async def run(self) -> None:
+        await asyncio.sleep(60)  # fly.io deployment process support
         self.update_feeds_last_update_times()
         while True:
             await self.update_user_id_list()
