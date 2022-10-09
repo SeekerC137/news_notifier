@@ -99,7 +99,9 @@ def get_entry_publishing_time(entry: dict) -> datetime:
 
 def clean_str_from_html_tags(raw_html: str) -> str:
     """Очищает строку от html тегов."""
-    return re.sub("<.*?>", "", raw_html)
+    string = re.sub("<.*?>", "", raw_html)
+    string = re.sub("&nbsp;&nbsp;", " ", string)
+    return string
 
 
 async def send_notice_to_user(user_id: int, title: str, keyword: str, summary: str, link: str) -> None:
