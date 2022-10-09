@@ -110,7 +110,7 @@ async def send_notice_to_user(user_id: int, title: str, keyword: str, summary: s
     summary_list = [summary[i:(i + max_summary_length)] for i in range(0, len(summary), max_summary_length)]
 
     for i, _summary in enumerate(summary_list):
-        if i == len(summary_list):
+        if (i + 1) == len(summary_list):
             message = (
                 f"Ключевое слово: #{keyword}\n\n"
                 f"{title}\n\n"
