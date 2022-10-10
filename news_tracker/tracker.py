@@ -63,7 +63,7 @@ class TrackerLoop:
             await asyncio.sleep(30)
 
     async def update_last_news_titles(self) -> None:
-        self.last_news_titles = ["" * (1000 * len(self.rss_list))]
+        self.last_news_titles = [""] * (1000 * len(self.rss_list))
         for rss_link in self.rss_list:
             while True:
                 try:
