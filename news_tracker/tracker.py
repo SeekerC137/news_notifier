@@ -1,8 +1,6 @@
 import re
 import asyncio
 import traceback
-from time import mktime
-from datetime import datetime
 
 import feedparser
 
@@ -18,13 +16,13 @@ class TrackerLoop:
 
     def __init__(self) -> None:
         self.users_id_list = None
-        self.rss_feeds_last_update_times = {}
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
+        self.rss_to_last_feed = {}
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
-        self.update_feeds_last_update_times()
+        await self.update_rss_to_last_feed()
         while True:
             await self.update_user_id_list()
             await self.update_users_id_to_keywords_dict()
@@ -34,13 +32,9 @@ class TrackerLoop:
                     if len(feed['entries']) == 0:
                         print(f"Пустой ответ для {rss_link}")
                         continue
-                    old_feed_update_time = self.rss_feeds_last_update_times[rss_link]
                     try:
                         for entry in feed['entries']:
-                            entry_publishing_time = get_entry_publishing_time(entry)
-                            if entry_publishing_time > old_feed_update_time:
-                                if entry_publishing_time > self.rss_feeds_last_update_times[rss_link]:
-                                    self.rss_feeds_last_update_times[rss_link] = entry_publishing_time
+                            if entry not in self.rss_to_last_feed[rss_link]:
                                 link = entry['link']
                                 title = clean_str_from_html_tags(entry['title'])
                                 try:
@@ -57,6 +51,7 @@ class TrackerLoop:
                                         await asyncio.sleep(0)
                                     await asyncio.sleep(0)
                             await asyncio.sleep(0)
+                        self.rss_to_last_feed[rss_link] = feed['entries']
                     except Exception:
                         print(f"Ошибка доступа к 'entry' в {rss_link}.")
                         print(traceback.format_exc())
@@ -66,10 +61,17 @@ class TrackerLoop:
                 await asyncio.sleep(0)
             await asyncio.sleep(30)
 
-    def update_feeds_last_update_times(self) -> None:
-        now = datetime.utcnow()
-        for rrs_link in self.rss_list:
-            self.rss_feeds_last_update_times[rrs_link] = now
+    async def update_rss_to_last_feed(self) -> None:
+        for rss_link in self.rss_list:
+            while True:
+                try:
+                    self.rss_to_last_feed[rss_link] = feedparser.parse(rss_link)['entries']
+                except Exception:
+                    await asyncio.sleep(60)
+                    continue
+                else:
+                    break
+            await asyncio.sleep(0)
 
     async def update_user_id_list(self) -> None:
         users = await get_all_users()
@@ -82,19 +84,6 @@ class TrackerLoop:
         for user_id in self.users_id_list:
             user = await get_user(user_id)
             self.users_id_to_keywords[user_id] = user.user_data["keywords"]
-
-
-def get_entry_publishing_time(entry: dict) -> datetime:
-
-    entry_update_time = entry['published_parsed']
-
-    # Исправление даты новостей которые не парсятся автоматически
-    if not entry_update_time:
-        entry_update_time = datetime.strptime(entry['published'], "%b %d, %Y %H:%M GMT")
-    else:
-        entry_update_time = datetime.fromtimestamp(mktime(entry_update_time))
-
-    return entry_update_time
 
 
 def clean_str_from_html_tags(raw_html: str) -> str:
