@@ -18,11 +18,11 @@ class TrackerLoop:
         self.users_id_list = None
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
-        self.rss_to_last_feed = {}
+        self.last_news_titles = None
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
-        await self.update_rss_to_last_feed()
+        await self.update_last_news_titles()
         while True:
             await self.update_user_id_list()
             await self.update_users_id_to_keywords_dict()
@@ -34,9 +34,9 @@ class TrackerLoop:
                         continue
                     try:
                         for entry in feed['entries']:
-                            if entry not in self.rss_to_last_feed[rss_link]:
+                            title = clean_str_from_html_tags(entry['title'])
+                            if title not in self.last_news_titles:
                                 link = entry['link']
-                                title = clean_str_from_html_tags(entry['title'])
                                 try:
                                     summary = clean_str_from_html_tags(entry['summary'])
                                 except KeyError:
@@ -50,8 +50,9 @@ class TrackerLoop:
                                             await send_notice_to_user(user_id, title, keyword, summary, link)
                                         await asyncio.sleep(0)
                                     await asyncio.sleep(0)
+                                self.last_news_titles.append(title)
+                                self.last_news_titles.pop(0)
                             await asyncio.sleep(0)
-                        self.rss_to_last_feed[rss_link] = feed['entries']
                     except Exception:
                         print(f"Ошибка доступа к 'entry' в {rss_link}.")
                         print(traceback.format_exc())
@@ -61,11 +62,16 @@ class TrackerLoop:
                 await asyncio.sleep(0)
             await asyncio.sleep(30)
 
-    async def update_rss_to_last_feed(self) -> None:
+    async def update_last_news_titles(self) -> None:
+        self.last_news_titles = ["" * (1000 * len(self.rss_list))]
         for rss_link in self.rss_list:
             while True:
                 try:
-                    self.rss_to_last_feed[rss_link] = feedparser.parse(rss_link)['entries']
+                    feed = feedparser.parse(rss_link)['entries']
+                    for entry in feed['entries']:
+                        title = clean_str_from_html_tags(entry['title'])
+                        self.last_news_titles.append(title)
+                        self.last_news_titles.pop(0)
                 except Exception:
                     await asyncio.sleep(60)
                     continue
