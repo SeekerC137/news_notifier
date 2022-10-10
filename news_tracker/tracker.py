@@ -67,7 +67,7 @@ class TrackerLoop:
         for rss_link in self.rss_list:
             while True:
                 try:
-                    feed = feedparser.parse(rss_link)['entries']
+                    feed = feedparser.parse(rss_link)
                     for entry in feed['entries']:
                         title = clean_str_from_html_tags(entry['title'])
                         self.last_news_titles.append(title)
