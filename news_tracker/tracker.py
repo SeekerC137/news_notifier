@@ -25,7 +25,7 @@ class TrackerLoop:
         await self.update_last_news_titles()
         while True:
             await self.update_user_id_list()
-            await self.update_users_id_to_keywords_dict()
+            await self.update_user_id_to_keywords_dict()
             for rss_link in self.rss_list:
                 try:
                     feed = feedparser.parse(rss_link)
@@ -80,16 +80,29 @@ class TrackerLoop:
             await asyncio.sleep(0)
 
     async def update_user_id_list(self) -> None:
-        users = await get_all_users()
-        self.users_id_list = []
-        for user in users:
-            self.users_id_list.append(user.user_id)
-            await asyncio.sleep(0)
+        while True:
+            try:
+                users = await get_all_users()
+                self.users_id_list = []
+                for user in users:
+                    self.users_id_list.append(user.user_id)
+                    await asyncio.sleep(0)
+            except Exception:
+                continue
+            else:
+                return
 
-    async def update_users_id_to_keywords_dict(self) -> None:
-        for user_id in self.users_id_list:
-            user = await get_user(user_id)
-            self.users_id_to_keywords[user_id] = user.user_data["keywords"]
+    async def update_user_id_to_keywords_dict(self) -> None:
+        while True:
+            try:
+                for user_id in self.users_id_list:
+                    user = await get_user(user_id)
+                    self.users_id_to_keywords[user_id] = user.user_data["keywords"]
+                    await asyncio.sleep(0)
+            except Exception:
+                continue
+            else:
+                return
 
 
 def clean_str_from_html_tags(raw_html: str) -> str:
