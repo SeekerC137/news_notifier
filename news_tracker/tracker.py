@@ -7,7 +7,6 @@ import feedparser
 from telegram_bot.bot import bot
 
 from db import get_all_users
-from db import get_user
 
 from config import RSS_LIST
 
@@ -16,6 +15,7 @@ class TrackerLoop:
 
     def __init__(self) -> None:
         self.users_id_list = None
+        self.users_keywords_list = None
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
         self.last_news_titles = None
@@ -84,8 +84,10 @@ class TrackerLoop:
             try:
                 users = await get_all_users()
                 self.users_id_list = []
+                self.users_keywords_list = []
                 for user in users:
                     self.users_id_list.append(user.user_id)
+                    self.users_keywords_list.append(user.user_data["keywords"])
                     await asyncio.sleep(0)
             except Exception:
                 continue
@@ -93,16 +95,9 @@ class TrackerLoop:
                 return
 
     async def update_user_id_to_keywords_dict(self) -> None:
-        while True:
-            try:
-                for user_id in self.users_id_list:
-                    user = await get_user(user_id)
-                    self.users_id_to_keywords[user_id] = user.user_data["keywords"]
-                    await asyncio.sleep(0)
-            except Exception:
-                continue
-            else:
-                return
+        for i, user_id in enumerate(self.users_id_list):
+            self.users_id_to_keywords[user_id] = self.users_keywords_list[i]
+            await asyncio.sleep(0)
 
 
 def clean_str_from_html_tags(raw_html: str) -> str:
