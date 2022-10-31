@@ -20,9 +20,6 @@ class TrackerLoop:
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
         self.last_news_titles = None
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux i686; rv:95.0) Gecko/20100101 Firefox/95.0'
-        }
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
@@ -32,7 +29,7 @@ class TrackerLoop:
             await self.update_user_id_to_keywords_dict()
             for rss_link in self.rss_list:
                 try:
-                    response = requests.get(rss_link, headers=self.headers, timeout=5)
+                    response = requests.get(rss_link, timeout=5)
                     if response.status_code == 200:
                         feed = feedparser.parse(response.content)
                         if len(feed['entries']) == 0:
@@ -73,7 +70,7 @@ class TrackerLoop:
         for rss_link in self.rss_list:
             while True:
                 try:
-                    response = requests.get(rss_link, headers=self.headers, timeout=5)
+                    response = requests.get(rss_link, timeout=5)
                     if response.status_code == 200:
                         feed = feedparser.parse(response.content)
                         for entry in feed['entries']:
