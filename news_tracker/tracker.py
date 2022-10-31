@@ -1,4 +1,5 @@
 import re
+import requests
 import asyncio
 import traceback
 
@@ -19,6 +20,9 @@ class TrackerLoop:
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
         self.last_news_titles = None
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux i686; rv:95.0) Gecko/20100101 Firefox/95.0'
+        }
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
@@ -28,34 +32,36 @@ class TrackerLoop:
             await self.update_user_id_to_keywords_dict()
             for rss_link in self.rss_list:
                 try:
-                    feed = feedparser.parse(rss_link)
-                    if len(feed['entries']) == 0:
-                        print(f"Пустой ответ для {rss_link}")
-                        continue
-                    try:
-                        for entry in feed['entries']:
-                            title = clean_str_from_html_tags(entry['title'])
-                            if title not in self.last_news_titles:
-                                link = entry['link']
-                                try:
-                                    summary = clean_str_from_html_tags(entry['summary'])
-                                except KeyError:
-                                    summary = ''
-                                for user_id in self.users_id_list:
-                                    for keyword in self.users_id_to_keywords[user_id]:
-                                        keyword = keyword.lower()
-                                        if keyword in title.lower():
-                                            await send_notice_to_user(user_id, title, keyword, summary, link)
-                                        elif keyword in summary.lower():
-                                            await send_notice_to_user(user_id, title, keyword, summary, link)
+                    response = requests.get(rss_link, headers=self.headers, timeout=5)
+                    if response.status_code == 200:
+                        feed = feedparser.parse(response.content)
+                        if len(feed['entries']) == 0:
+                            print(f"Пустой ответ для {rss_link}")
+                            continue
+                        try:
+                            for entry in feed['entries']:
+                                title = clean_str_from_html_tags(entry['title'])
+                                if title not in self.last_news_titles:
+                                    link = entry['link']
+                                    try:
+                                        summary = clean_str_from_html_tags(entry['summary'])
+                                    except KeyError:
+                                        summary = ''
+                                    for user_id in self.users_id_list:
+                                        for keyword in self.users_id_to_keywords[user_id]:
+                                            keyword = keyword.lower()
+                                            if keyword in title.lower():
+                                                await send_notice_to_user(user_id, title, keyword, summary, link)
+                                            elif keyword in summary.lower():
+                                                await send_notice_to_user(user_id, title, keyword, summary, link)
+                                            await asyncio.sleep(0)
                                         await asyncio.sleep(0)
-                                    await asyncio.sleep(0)
-                                self.last_news_titles.append(title)
-                                self.last_news_titles.pop(0)
-                            await asyncio.sleep(0)
-                    except Exception:
-                        print(f"Ошибка доступа к 'entry' в {rss_link}.")
-                        print(traceback.format_exc())
+                                    self.last_news_titles.append(title)
+                                    self.last_news_titles.pop(0)
+                                await asyncio.sleep(0)
+                        except Exception:
+                            print(f"Ошибка доступа к 'entry' в {rss_link}.")
+                            print(traceback.format_exc())
                 except Exception:
                     print(f"Ошибка feedparser при обработке {rss_link}.")
                     print(traceback.format_exc())
@@ -67,11 +73,13 @@ class TrackerLoop:
         for rss_link in self.rss_list:
             while True:
                 try:
-                    feed = feedparser.parse(rss_link)
-                    for entry in feed['entries']:
-                        title = clean_str_from_html_tags(entry['title'])
-                        self.last_news_titles.append(title)
-                        self.last_news_titles.pop(0)
+                    response = requests.get(rss_link, headers=self.headers, timeout=5)
+                    if response.status_code == 200:
+                        feed = feedparser.parse(response.content)
+                        for entry in feed['entries']:
+                            title = clean_str_from_html_tags(entry['title'])
+                            self.last_news_titles.append(title)
+                            self.last_news_titles.pop(0)
                 except Exception:
                     await asyncio.sleep(60)
                     continue
