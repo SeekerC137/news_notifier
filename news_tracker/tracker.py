@@ -63,7 +63,7 @@ class TrackerLoop:
                     print(f"Ошибка feedparser при обработке {rss_link}.")
                     print(traceback.format_exc())
                 await asyncio.sleep(0)
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
     async def update_last_news_titles(self) -> None:
         self.last_news_titles = [""] * (1000 * len(self.rss_list))
