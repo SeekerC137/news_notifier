@@ -30,7 +30,7 @@ class TrackerLoop:
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
-        await self.update_last_news_titles()  # main loop, time to execute 9 min. (from 2022-11-02 00:00) (need 70GB/month traffic or 200Kb/s)
+        await self.update_last_news_titles()
         while True:
             await self.update_user_id_list()
             await self.update_user_id_to_keywords_dict()
@@ -70,7 +70,7 @@ class TrackerLoop:
                     print(f"Ошибка feedparser при обработке {rss_link}.")
                     print(traceback.format_exc())
                 await asyncio.sleep(0)
-            await asyncio.sleep(0)
+            await asyncio.sleep(60)
 
     async def update_last_news_titles(self) -> None:
         """
