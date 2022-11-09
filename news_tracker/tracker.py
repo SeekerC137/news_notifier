@@ -2,7 +2,7 @@ import re
 import requests
 import asyncio
 import traceback
-
+from urllib3 import disable_warnings, exceptions
 import feedparser
 
 from telegram_bot.bot import bot
@@ -10,6 +10,9 @@ from telegram_bot.bot import bot
 from db import get_all_users
 
 from config import RSS_LIST
+
+
+disable_warnings(exceptions.InsecureRequestWarning)
 
 
 class TrackerLoop:
@@ -33,7 +36,7 @@ class TrackerLoop:
             await self.update_user_id_to_keywords_dict()
             for rss_link in self.rss_list:
                 try:
-                    response = requests.get(rss_link, timeout=5)
+                    response = requests.get(rss_link, timeout=5, verify=False)
                     if response.status_code == 200:
                         feed = feedparser.parse(response.content)
                         if len(feed['entries']) == 0:
@@ -81,7 +84,7 @@ class TrackerLoop:
         for rss_link in self.rss_list:
             while True:
                 try:
-                    response = requests.get(rss_link, timeout=5)
+                    response = requests.get(rss_link, timeout=5, verify=False)
                     if response.status_code == 200:
                         feed = feedparser.parse(response.content)
                         for entry in feed['entries']:
