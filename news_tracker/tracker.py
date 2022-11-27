@@ -60,7 +60,7 @@ class TrackerLoop:
                                                 await send_notice_to_user(user_id, title, keyword, summary, link)
                                             await asyncio.sleep(0)
                                         await asyncio.sleep(0)
-                                    self.last_news_links.append(title)
+                                    self.last_news_links.append(link)
                                     self.last_news_links.pop(0)
                                 await asyncio.sleep(0)
                         except Exception:
