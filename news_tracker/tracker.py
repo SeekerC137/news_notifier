@@ -141,7 +141,10 @@ async def send_notice_to_user(user_id: int, title: str, keyword: str, summary: s
             f"Ключевое слово: #{keyword}"
         )
 
-    await bot.send_message(user_id, message, disable_web_page_preview=True)
+    try:
+        await bot.send_message(user_id, message, disable_web_page_preview=True)
+    except Exception:
+        pass
 
 
 def crop_summary(summary: str) -> str:
