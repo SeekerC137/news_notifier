@@ -26,7 +26,7 @@ class TrackerLoop:
         self.users_keywords_list = None
         self.users_id_to_keywords = {}
         self.rss_list = RSS_LIST
-        self.last_news_titles = None
+        self.last_news_links = None
 
     async def run(self) -> None:
         await asyncio.sleep(60)  # fly.io deployment process support
@@ -44,9 +44,9 @@ class TrackerLoop:
                             continue
                         try:
                             for entry in feed['entries']:
-                                title = clean_str_from_html_tags(entry['title'])
-                                if title not in self.last_news_titles:
-                                    link = entry['link']
+                                link = entry['link']
+                                if link not in self.last_news_links:
+                                    title = clean_str_from_html_tags(entry['title'])
                                     try:
                                         summary = clean_str_from_html_tags(entry['summary'])
                                     except KeyError:
@@ -60,8 +60,8 @@ class TrackerLoop:
                                                 await send_notice_to_user(user_id, title, keyword, summary, link)
                                             await asyncio.sleep(0)
                                         await asyncio.sleep(0)
-                                    self.last_news_titles.append(title)
-                                    self.last_news_titles.pop(0)
+                                    self.last_news_links.append(title)
+                                    self.last_news_links.pop(0)
                                 await asyncio.sleep(0)
                         except Exception:
                             print(f"Ошибка доступа к 'entry' в {rss_link}.")
@@ -75,12 +75,12 @@ class TrackerLoop:
     async def update_last_news_titles(self) -> None:
         """
         Начинает работать первой. Выполняется четыре минуты.
-        Обновляет словарь с последними заголовками новостей, он нужен для
+        Обновляет словарь с последними ссылками новостей, он нужен для
         того, чтобы новости не повторялись.
         :return:
         None
         """
-        self.last_news_titles = [""] * (1000 * len(self.rss_list))
+        self.last_news_links = [""] * (1000 * len(self.rss_list))
         for rss_link in self.rss_list:
             while True:
                 try:
@@ -88,9 +88,9 @@ class TrackerLoop:
                     if response.status_code == 200:
                         feed = feedparser.parse(response.content)
                         for entry in feed['entries']:
-                            title = clean_str_from_html_tags(entry['title'])
-                            self.last_news_titles.append(title)
-                            self.last_news_titles.pop(0)
+                            link = entry['link']
+                            self.last_news_links.append(link)
+                            self.last_news_links.pop(0)
                 except Exception:
                     await asyncio.sleep(60)
                     continue
