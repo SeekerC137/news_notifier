@@ -1,4 +1,4 @@
 aiogram==2.11.2
 feedparser==6.0.8
 gino==1.0.1
-requests==2.26.0
+requests==2.31.0

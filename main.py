@@ -7,16 +7,14 @@ from telegram_bot.bot import run_bot
 from news_tracker.tracker import TrackerLoop
 
 
-def start_service() -> None:
+async def start_service() -> None:
     loop = TrackerLoop()
-    coroutines = [
-        set_db_connection(),
-        run_bot(),
-        loop.run(),
-    ]
-    asyncio.run(asyncio.wait(coroutines))
+    task1 = asyncio.create_task(set_db_connection())
+    task2 = asyncio.create_task(run_bot())
+    task3 = asyncio.create_task(loop.run())
+    await asyncio.gather(task1, task2, task3)
 
 
 if __name__ == "__main__":
 
-    start_service()
+    asyncio.run(start_service())
